@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>عالمنا الخاص ❤️</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background: linear-gradient(135deg, #1a050e 0%, #3a0d1d 50%, #100208 100%); color: #ffffff; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 10px; }
+    
+    .chat-card { width: 100%; max-width: 450px; height: 92vh; background: rgba(35, 10, 22, 0.85); backdrop-filter: blur(15px); border-radius: 25px; border: 1px solid rgba(255, 182, 193, 0.25); box-shadow: 0 15px 35px rgba(0,0,0,0.6); display: flex; flex-direction: column; overflow: hidden; position: relative; }
+
+    /* شاشة الدخول */
+    #login-screen { position: absolute; inset: 0; background: #200612; z-index: 20; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 25px; gap: 18px; text-align: center; }
+    #login-screen h2 { color: #ffb7c5; font-size: 26px; }
+    .role-select { display: flex; gap: 10px; width: 100%; }
+    .role-btn { flex: 1; padding: 12px; border: 1.5px solid #ff758c; background: transparent; color: #ffb7c5; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+    .role-btn.active { background: #ff758c; color: white; }
+    input[type="password"] { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid #ff758c; outline: none; text-align: center; font-size: 16px; background: rgba(255,255,255,0.95); color: #4a0017; font-weight: bold; }
+    .btn-enter { width: 100%; padding: 14px; background: linear-gradient(45deg, #ff758c, #ff7eb3); border: none; color: white; border-radius: 12px; font-weight: bold; font-size: 16px; cursor: pointer; }
+
+    /* الهيدر */
+    .chat-header { padding: 15px 20px; background: rgba(0, 0, 0, 0.3); border-bottom: 1px solid rgba(255, 182, 193, 0.15); display: flex; justify-content: space-between; align-items: center; }
+    .header-info h3 { font-size: 17px; color: #ffb7c5; }
+    .status-text { font-size: 12px; color: #aaa; display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: #777; display: inline-block; }
+    .status-dot.online { background-color: #25d366; box-shadow: 0 0 8px #25d366; }
+
+    /* قائمة الرسائل */
+    .messages-area { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background: rgba(0, 0, 0, 0.15); }
+    .msg-bubble { max-width: 78%; padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.5; word-break: break-word; position: relative; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .msg-bubble.me { align-self: flex-start; background: linear-gradient(135deg, #ff758c, #ff4d6d); color: white; border-bottom-right-radius: 3px; }
+    .msg-bubble.other { align-self: flex-end; background: rgba(255, 255, 255, 0.12); color: #ffe6eb; border-bottom-left-radius: 3px; border: 1px solid rgba(255, 255, 255, 0.08); }
+    
+    .msg-meta { display: flex; justify-content: flex-end; align-items: center; gap: 4px; font-size: 10px; opacity: 0.75; margin-top: 4px; }
+    .seen-mark { font-size: 11px; }
+    .seen-mark.seen { color: #80d8ff; }
+
+    /* منطقة الكتابة */
+    .input-area { padding: 12px 15px; background: rgba(0, 0, 0, 0.3); border-top: 1px solid rgba(255, 182, 193, 0.15); display: flex; gap: 10px; }
+    .input-area input { flex: 1; padding: 12px 16px; border-radius: 20px; border: 1px solid #ff758c; background: rgba(255, 255, 255, 0.95); color: #4a0017; outline: none; font-size: 14px; text-align: right; }
+    .input-area button { padding: 12px 20px; border-radius: 20px; border: none; background: linear-gradient(45deg, #ff758c, #ff7eb3); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    .input-area button:active { transform: scale(0.95); }
+  </style>
+</head>
+<body>
+
+<div class="chat-card">
+  <!-- شاشة اختيار الشخص والدخول -->
+  <div id="login-screen">
+    <h2>مين بيتكلم؟ ❤️</h2>
+    <div class="role-select">
+      <button class="role-btn active" id="roleHer" onclick="selectRole('أميرتي')">أميرتي 👑</button>
+      <button class="role-btn" id="roleMe" onclick="selectRole('أنا')">أنا ❤️</button>
+    </div>
+    <input type="password" id="passCode" placeholder="كلمة السر (15/8)">
+    <button class="btn-enter" onclick="login()">دخول الشات ✨</button>
+  </div>
+
+  <!-- الهيدر -->
+  <div class="chat-header">
+    <div class="header-info">
+      <h3 id="partnerTitle">الشات الخاص ❤️</h3>
+      <div class="status-text">
+        <span class="status-dot" id="partnerDot"></span>
+        <span id="partnerStatus">غير متصل</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- الرسائل -->
+  <div class="messages-area" id="messagesArea"></div>
+
+  <!-- الإدخال -->
+  <div class="input-area">
+    <input type="text" id="msgInput" placeholder="اكتب رسالتك..." autocomplete="off">
+    <button id="sendBtn">إرسال</button>
+  </div>
+</div>
+
+<script>
+  let selectedRole = "أميرتي";
+
+  function selectRole(role) {
+    selectedRole = role;
+    document.getElementById("roleHer").classList.toggle("active", role === "أميرتي");
+    document.getElementById("roleMe").classList.toggle("active", role === "أنا");
+  }
+
+  function login() {
+    const pass = document.getElementById("passCode").value.trim();
+    const valid = ["15/8", "15-8", "15/08", "١٥/٨"];
+    if (valid.includes(pass)) {
+      document.getElementById("login-screen").style.display = "none";
+      if (window.startChatApp) window.startChatApp(selectedRole);
+    } else {
+      alert("كلمة السر غير صحيحة 😅");
+    }
+  }
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  import { getDatabase, ref, push, onChildAdded, onValue, set, onDisconnect, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAPYJt5YFdGQH2XFYqkkJi7WHxQw9BLvQc",
+    authDomain: "my-life-f3893.firebaseapp.com",
+    databaseURL: "https://my-life-f3893-default-rtdb.firebaseio.com",
+    projectId: "my-life-f3893",
+    storageBucket: "my-life-f3893.firebasestorage.app",
+    messagingSenderId: "229081546680",
+    appId: "1:229081546680:web:ca1c9a2120cd870e55594d"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+
+  signInAnonymously(auth).catch(console.error);
+
+  window.startChatApp = function(userRole) {
+    const partnerRole = userRole === 'أميرتي' ? 'أنا' : 'أميرتي';
+    document.getElementById('partnerTitle').textContent = partnerRole;
+
+    const messagesRef = ref(db, 'private_chat/messages');
+    const myPresenceRef = ref(db, `private_chat/presence/${userRole}`);
+    const partnerPresenceRef = ref(db, `private_chat/presence/${partnerRole}`);
+    const connectedRef = ref(db, '.info/connected');
+
+    // تتبع حالة أونلاين
+    onValue(connectedRef, (snap) => {
+      if (snap.val() === true) {
+        set(myPresenceRef, { online: true, time: Date.now() });
+        onDisconnect(myPresenceRef).set({ online: false, time: Date.now() });
+      }
+    });
+
+    // متابعة حالة الطرف الآخر
+    onValue(partnerPresenceRef, (snap) => {
+      const data = snap.val();
+      const dot = document.getElementById('partnerDot');
+      const statusText = document.getElementById('partnerStatus');
+      if (data && data.online) {
+        dot.classList.add('online');
+        statusText.textContent = "متصل الآن";
+        statusText.style.color = "#25d366";
+      } else {
+        dot.classList.remove('online');
+        statusText.textContent = "غير متصل";
+        statusText.style.color = "#aaa";
+      }
+    });
+
+    // إرسال رسالة
+    function sendMsg() {
+      const input = document.getElementById('msgInput');
+      const txt = input.value.trim();
+      if (txt !== "") {
+        const timeStr = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+        push(messagesRef, {
+          sender: userRole,
+          text: txt,
+          time: timeStr,
+          seen: false,
+          ts: Date.now()
+        });
+        input.value = "";
+      }
+    }
+
+    document.getElementById('sendBtn').onclick = sendMsg;
+    document.getElementById('msgInput').onkeydown = (e) => { if (e.key === 'Enter') sendMsg(); };
+
+    const area = document.getElementById('messagesArea');
+
+    // استقبال الرسائل
+    onChildAdded(messagesRef, (snap) => {
+      const id = snap.key;
+      const val = snap.val();
+
+      if (val.sender !== userRole && !val.seen) {
+        update(ref(db, `private_chat/messages/${id}`), { seen: true });
+      }
+
+      renderMsg(id, val, userRole);
+    });
+
+    // تحديث علامة Seen
+    onValue(messagesRef, (snap) => {
+      const msgs = snap.val();
+      if (!msgs) return;
+      for (let id in msgs) {
+        const elem = document.getElementById(`m-${id}`);
+        if (elem && msgs[id].seen) {
+          const mark = elem.querySelector('.seen-mark');
+          if (mark) {
+            mark.classList.add('seen');
+            mark.textContent = '✓✓';
+          }
+        }
+      }
+    });
+  };
+
+  function renderMsg(id, val, currentUser) {
+    const area = document.getElementById('messagesArea');
+    const isMe = val.sender === currentUser;
+    const div = document.createElement('div');
+    div.id = `m-${id}`;
+    div.className = `msg-bubble ${isMe ? 'me' : 'other'}`;
+
+    const seenHtml = isMe ? `<span class="seen-mark ${val.seen ? 'seen' : ''}">${val.seen ? '✓✓' : '✓'}</span>` : '';
+
+    div.innerHTML = `
+      <div>${escapeHtml(val.text)}</div>
+      <div class="msg-meta">
+        <span>${val.time || ''}</span>
+        ${seenHtml}
+      </div>
+    `;
+
+    area.appendChild(div);
+    area.scrollTop = area.scrollHeight;
+  }
+
+  function escapeHtml(t) {
+    return t.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
+  }
+</script>
+</body>
+  </html>
+  

@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -6,15 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>عالمنا الخاص ❤️</title>
   <style>
-    /* فرض خط إيموجيهات آيفون على كل الإيموجي في الشات */
-    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
-
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    
-    /* جعل الإيموجي يظهر بشكل آيفون قدر الإمكان عبر دعم الخطوط */
-    body, button, input, .msg-bubble, .reaction-emoji, .reactions-display {
-      font-family: 'Tajawal', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     
     body { 
       background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #feada6 100%); 
@@ -93,7 +84,7 @@
     .seen-mark.seen { color: #80d8ff; }
     .msg-wrapper.other .seen-mark.seen { color: #0084ff; }
 
-    /* شريط تفاعلات الإيموجي */
+    /* شريط تفاعلات الإيموجي (شريط التفاعل) */
     .reaction-bar { display: none; position: absolute; top: -38px; right: 0; background: rgba(255, 255, 255, 0.98); border: 1px solid #ff758c; border-radius: 20px; padding: 4px 10px; gap: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); z-index: 15; animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
     .reaction-bar.show { display: flex; }
     .reaction-emoji { font-size: 18px; cursor: pointer; transition: transform 0.15s ease; }
@@ -104,7 +95,7 @@
     .reactions-display { display: flex; gap: 4px; position: absolute; bottom: -12px; left: 10px; background: #fff; border: 1px solid #ff758c; border-radius: 12px; padding: 1px 6px; font-size: 11px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); z-index: 5; }
     .reactions-display:empty { display: none; }
 
-    /* خيارات الرسالة */
+    /* خيارات الرسالة (تظهر عند النقر) */
     .msg-actions { display: none; position: absolute; top: -32px; right: 10px; background: rgba(255,255,255,0.95); border: 1px solid #ff758c; border-radius: 12px; padding: 3px 10px; gap: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10; }
     .msg-actions.show { display: flex; }
     .action-btn { font-size: 12px; color: #d63384; cursor: pointer; font-weight: bold; }
@@ -359,6 +350,7 @@
       const val = snap.val();
       const msgElem = document.getElementById(`m-${id}`);
       if (msgElem) {
+        // تحديث النص عند التعديل
         if (val.type === 'text') {
           const txtDiv = msgElem.querySelector('.msg-text');
           if (txtDiv) txtDiv.textContent = val.text;
@@ -370,6 +362,7 @@
           }
         }
 
+        // تحديث التفاعلات (Reactions)
         const reactDisplay = msgElem.querySelector('.reactions-display');
         if (reactDisplay) {
           let emojiStr = '';
@@ -425,6 +418,7 @@
       contentHtml = `<div class="msg-text">${escapeHtml(val.text)}</div>`;
     }
 
+    // تجهيز التفاعلات الحالية
     let initialReactions = '';
     if (val.reactions) {
       Object.values(val.reactions).forEach(emo => { initialReactions += emo + ' '; });
@@ -433,6 +427,7 @@
     const bubble = document.createElement('div');
     bubble.className = 'msg-bubble';
     bubble.innerHTML = `
+      <!-- شريط الإيموجي للـ Reaction -->
       <div class="reaction-bar" id="react-${id}">
         <span class="reaction-emoji" onclick="event.stopPropagation(); toggleReaction('${id}', '❤️')">❤️</span>
         <span class="reaction-emoji" onclick="event.stopPropagation(); toggleReaction('${id}', '😂')">😂</span>
@@ -440,6 +435,7 @@
         <span class="reaction-emoji" onclick="event.stopPropagation(); toggleReaction('${id}', '👀')">👀</span>
       </div>
 
+      <!-- قائمة الإجراءات -->
       <div class="msg-actions" id="actions-${id}">
         <span class="action-btn" onclick="event.stopPropagation(); setReply('${escapeHtml(val.sender)}', '${escapeHtml(val.text || 'صورة')}'); hideAllPopups();">رد</span>
         ${isMe && val.type === 'text' ? `<span class="action-btn" onclick="event.stopPropagation(); editMsg('${id}', '${escapeHtml(val.text)}'); hideAllPopups();">تعديل</span>` : ''}
@@ -454,7 +450,107 @@
         ${seenHtml}
       </div>
 
+      <!-- مكان عرض التفاعل المصغر -->
       <div class="reactions-display">${initialReactions.trim()}</div>
     `;
 
-    bub
+    // إظهار قائمة الخيارات عند الضغط العادي
+    bubble.onclick = (e) => {
+      e.stopPropagation();
+      hideAllPopups();
+      const actions = document.getElementById(`actions-${id}`);
+      if (actions)actions.classList.toggle('show');
+    };
+
+    // إظهار التفاعلات عند الضغط المزدوج (Double Click)
+    bubble.ondblclick = (e) => {
+      e.stopPropagation();
+      hideAllPopups();
+      const bar = document.getElementById(`react-${id}`);
+      if (bar) bar.classList.add('show');
+    };
+
+    // إظهار التفاعلات عند الضغط المطول (Long Press) للموبايل والكمبيوتر
+    let pressTimer;
+    const startPress = (e) => {
+      pressTimer = setTimeout(() => {
+        hideAllPopups();
+        const bar = document.getElementById(`react-${id}`);
+        if (bar) bar.classList.add('show');
+      }, 500);
+    };
+    const cancelPress = () => clearTimeout(pressTimer);
+
+    bubble.addEventListener('touchstart', startPress, {passive: true});
+    bubble.addEventListener('touchend', cancelPress);
+    bubble.addEventListener('touchmove', cancelPress);
+    bubble.addEventListener('mousedown', startPress);
+    bubble.addEventListener('mouseup', cancelPress);
+    bubble.addEventListener('mouseleave', cancelPress);
+
+    // ميزة السحب يمين للريبلاي
+    let startX = 0;
+    let currentX = 0;
+    let isSwiping = false;
+
+    bubble.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+      isSwiping = true;
+    }, {passive: true});
+
+    bubble.addEventListener('touchmove', (e) => {
+      if (!isSwiping) return;
+      currentX = e.touches[0].clientX - startX;
+      if (currentX > 0 && currentX < 90) {
+        wrapper.style.transform = `translateX(${currentX}px)`;
+        bubble.querySelector('.swipe-indicator').style.opacity = currentX / 60;
+      }
+    }, {passive: true});
+
+    bubble.addEventListener('touchend', () => {
+      if (!isSwiping) return;
+      isSwiping = false;
+      if (currentX > 50) {
+        setReply(val.sender, val.text || 'صورة');
+      }
+      wrapper.style.transform = 'translateX(0px)';
+      bubble.querySelector('.swipe-indicator').style.opacity = 0;
+      currentX = 0;
+    });
+
+    wrapper.appendChild(bubble);
+    area.appendChild(wrapper);
+    area.scrollTop = area.scrollHeight;
+  }
+
+  function hideAllPopups() {
+    document.querySelectorAll('.msg-actions').forEach(el => el.classList.remove('show'));
+    document.querySelectorAll('.reaction-bar').forEach(el => el.classList.remove('show'));
+  }
+
+  document.addEventListener('click', hideAllPopups);
+
+  window.setReply = function(sender, text) {
+    window.activeReply = { sender, text };
+    document.getElementById('replyText').textContent = `${sender}: ${text}`;
+    document.getElementById('replyPreview').style.display = 'flex';
+    document.getElementById('msgInput').focus();
+  };
+
+  window.editMsg = function(id, oldText) {
+    const newText = prompt("تعديل الرسالة:", oldText);
+    if (newText !== null && newText.trim() !== "" && newText !== oldText) {
+      update(ref(db, `private_chat/messages/${id}`), {
+        text: newText.trim(),
+        edited: true
+      });
+    }
+  };
+
+  function escapeHtml(t) {
+    if (!t) return '';
+    return t.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
+  }
+</script>
+</body>
+</html>

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -5,7 +6,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>عالمنا الخاص ❤️</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    /* فرض خط إيموجيهات آيفون على كل الإيموجي في الشات */
+    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    
+    /* جعل الإيموجي يظهر بشكل آيفون قدر الإمكان عبر دعم الخطوط */
+    body, button, input, .msg-bubble, .reaction-emoji, .reactions-display {
+      font-family: 'Tajawal', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+    }
     
     body { 
       background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #feada6 100%); 
@@ -64,7 +73,7 @@
     .typing-text { color: #d63384; font-weight: bold; font-size: 11px; }
 
     /* الرسائل */
-    .messages-area { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background: transparent; }
+    .messages-area { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; background: transparent; }
     
     .msg-wrapper { position: relative; display: flex; width: 100%; transition: transform 0.2s ease; }
     .msg-wrapper.me { justify-content: flex-start; }
@@ -84,16 +93,27 @@
     .seen-mark.seen { color: #80d8ff; }
     .msg-wrapper.other .seen-mark.seen { color: #0084ff; }
 
-    /* الصور داخل الشات */
-    .chat-img { max-width: 100%; border-radius: 12px; margin-bottom: 5px; cursor: pointer; max-height: 220px; object-fit: cover; }
+    /* شريط تفاعلات الإيموجي */
+    .reaction-bar { display: none; position: absolute; top: -38px; right: 0; background: rgba(255, 255, 255, 0.98); border: 1px solid #ff758c; border-radius: 20px; padding: 4px 10px; gap: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); z-index: 15; animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .reaction-bar.show { display: flex; }
+    .reaction-emoji { font-size: 18px; cursor: pointer; transition: transform 0.15s ease; }
+    .reaction-emoji:hover { transform: scale(1.3); }
+    @keyframes popIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
 
-    /* خيارات الرسالة (تظهر عند النقر) */
+    /* عرض التفاعلات المحددة أسفل الرسالة */
+    .reactions-display { display: flex; gap: 4px; position: absolute; bottom: -12px; left: 10px; background: #fff; border: 1px solid #ff758c; border-radius: 12px; padding: 1px 6px; font-size: 11px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); z-index: 5; }
+    .reactions-display:empty { display: none; }
+
+    /* خيارات الرسالة */
     .msg-actions { display: none; position: absolute; top: -32px; right: 10px; background: rgba(255,255,255,0.95); border: 1px solid #ff758c; border-radius: 12px; padding: 3px 10px; gap: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10; }
     .msg-actions.show { display: flex; }
     .action-btn { font-size: 12px; color: #d63384; cursor: pointer; font-weight: bold; }
 
     /* مؤشر السحب للرد */
     .swipe-indicator { position: absolute; right: -25px; top: 50%; transform: translateY(-50%); font-size: 16px; color: #ff4d6d; opacity: 0; transition: opacity 0.2s; }
+
+    /* الصور داخل الشات */
+    .chat-img { max-width: 100%; border-radius: 12px; margin-bottom: 5px; cursor: pointer; max-height: 220px; object-fit: cover; }
 
     /* معاينة الرد */
     .reply-preview { display: none; background: rgba(255, 255, 255, 0.9); padding: 8px 12px; border-top: 1px solid rgba(255, 182, 193, 0.4); border-right: 4px solid #ff4d6d; justify-content: space-between; align-items: center; font-size: 13px; color: #d63384; }
@@ -338,14 +358,25 @@
       const id = snap.key;
       const val = snap.val();
       const msgElem = document.getElementById(`m-${id}`);
-      if (msgElem && val.type === 'text') {
-        const txtDiv = msgElem.querySelector('.msg-text');
-        if (txtDiv) txtDiv.textContent = val.text;
-        
-        let editTag = msgElem.querySelector('.edited-tag');
-        if (val.edited && !editTag) {
-          const meta = msgElem.querySelector('.msg-meta');
-          meta.insertAdjacentHTML('afterbegin', '<span class="edited-tag">(معدلة)</span>');
+      if (msgElem) {
+        if (val.type === 'text') {
+          const txtDiv = msgElem.querySelector('.msg-text');
+          if (txtDiv) txtDiv.textContent = val.text;
+          
+          let editTag = msgElem.querySelector('.edited-tag');
+          if (val.edited && !editTag) {
+            const meta = msgElem.querySelector('.msg-meta');
+            meta.insertAdjacentHTML('afterbegin', '<span class="edited-tag">(معدلة)</span>');
+          }
+        }
+
+        const reactDisplay = msgElem.querySelector('.reactions-display');
+        if (reactDisplay) {
+          let emojiStr = '';
+          if (val.reactions) {
+            Object.values(val.reactions).forEach(emo => { emojiStr += emo + ' '; });
+          }
+          reactDisplay.textContent = emojiStr.trim();
         }
       }
     });
@@ -364,6 +395,12 @@
         }
       }
     });
+
+    window.toggleReaction = function(msgId, emoji) {
+      const reactionRef = ref(db, `private_chat/messages/${msgId}/reactions/${userRole}`);
+      set(reactionRef, emoji);
+      hideAllPopups();
+    };
   };
 
   function renderMsg(id, val, currentUser) {
@@ -388,13 +425,26 @@
       contentHtml = `<div class="msg-text">${escapeHtml(val.text)}</div>`;
     }
 
+    let initialReactions = '';
+    if (val.reactions) {
+      Object.values(val.reactions).forEach(emo => { initialReactions += emo + ' '; });
+    }
+
     const bubble = document.createElement('div');
     bubble.className = 'msg-bubble';
     bubble.innerHTML = `
-      <div class="msg-actions" id="actions-${id}">
-        <span class="action-btn" onclick="event.stopPropagation(); setReply('${escapeHtml(val.sender)}', '${escapeHtml(val.text || 'صورة')}'); hideActions('${id}');">رد</span>
-        ${isMe && val.type === 'text' ? `<span class="action-btn" onclick="event.stopPropagation(); editMsg('${id}', '${escapeHtml(val.text)}'); hideActions('${id}');">تعديل</span>` : ''}
+      <div class="reaction-bar" id="react-${id}">
+        <span class="reaction-emoji" onclick="event.stopPropagation(); toggleReaction('${id}', '❤️')">❤️</span>
+        <span class="reaction-emoji" onclick="event.stopPropagation(); toggleReaction('${id}', '😂')">😂</span>
+        <span class="reaction-emoji" onclick="event.stopPropagation(); toggleReaction('${id}', '👍')">👍</span>
+        <span class="reaction-emoji" onclick="event.stopPropagation(); toggleReaction('${id}', '👀')">👀</span>
       </div>
+
+      <div class="msg-actions" id="actions-${id}">
+        <span class="action-btn" onclick="event.stopPropagation(); setReply('${escapeHtml(val.sender)}', '${escapeHtml(val.text || 'صورة')}'); hideAllPopups();">رد</span>
+        ${isMe && val.type === 'text' ? `<span class="action-btn" onclick="event.stopPropagation(); editMsg('${id}', '${escapeHtml(val.text)}'); hideAllPopups();">تعديل</span>` : ''}
+      </div>
+
       <span class="swipe-indicator">↩</span>
       ${replyHtml}
       ${contentHtml}
@@ -403,88 +453,8 @@
         <span>${val.time || ''}</span>
         ${seenHtml}
       </div>
+
+      <div class="reactions-display">${initialReactions.trim()}</div>
     `;
 
-    // إظهار قائمة الخيارات عند الضغط على الرسالة
-    bubble.onclick = (e) => {
-      e.stopPropagation();
-      document.querySelectorAll('.msg-actions').forEach(el => el.classList.remove('show'));
-      const actions = document.getElementById(`actions-${id}`);
-      if (actions) actions.classList.toggle('show');
-    };
-
-    // ميزة السحب يمين للريبلاي (تجارب اللمس والماوس)
-    let startX = 0;
-    let currentX = 0;
-    let isSwiping = false;
-
-    bubble.addEventListener('touchstart', (e) => {
-      startX = e.touches[0].clientX;
-      isSwiping = true;
-    }, {passive: true});
-
-    bubble.addEventListener('touchmove', (e) => {
-      if (!isSwiping) return;
-      currentX = e.touches[0].clientX - startX;
-      if (currentX > 0 && currentX < 90) {
-        wrapper.style.transform = `translateX(${currentX}px)`;
-        bubble.querySelector('.swipe-indicator').style.opacity = currentX / 60;
-      }
-    }, {passive: true});
-
-    bubble.addEventListener('touchend', () => {
-      if (!isSwiping) return;
-      isSwiping = false;
-      if (currentX > 50) {
-        setReply(val.sender, val.text || 'صورة');
-      }
-      wrapper.style.transform = 'translateX(0px)';
-      bubble.querySelector('.swipe-indicator').style.opacity = 0;
-      currentX = 0;
-    });
-
-    // دعم السحب بواسطة الماوس للكمبيوتر
-    bubble.addEventListener('mousedown', (e) => {
-      startX = e.clientX;
-      isSwiping = true;
-    });
-
-    window.addEventListener('mousemove', (e) => {
-      if (!isSwiping) return;
-      currentX = e.clientX - startX;
-      if (currentX > 0 && currentX < 90) {
-        wrapper.style.transform = `translateX(${currentX}px)`;
-        bubble.querySelector('.swipe-indicator').style.opacity = currentX / 60;
-      }
-    });
-
-    window.addEventListener('mouseup', () => {
-      if (!isSwiping) return;
-      isSwiping = false;
-      if (currentX > 50) {
-        setReply(val.sender, val.text || 'صورة');
-      }
-      wrapper.style.transform = 'translateX(0px)';
-      bubble.querySelector('.swipe-indicator').style.opacity = 0;
-      currentX = 0;
-    });
-
-    wrapper.appendChild(bubble);
-    area.appendChild(wrapper);
-    area.scrollTop = area.scrollHeight;
-  }
-
-  window.hideActions = function(id) {
-    const actions = document.getElementById(`actions-${id}`);
-    if (actions) actions.classList.remove('show');
-  };
-
-  // إغلاق قوائم الخيارات عند الضغط في أي مكان بالشات
-  document.addEventListener('click', () => {
-    document.querySelectorAll('.msg-actions').forEach(el => el.classList.remove('show'));
-  });
-
-  window.setReply = function(sender, text) {
-    window.activeReply = { sender, text };
-    document.getElementById('replyText').textContent = `${sender}: ${text}`;
-    document.getElementById('replyPreview').sty
+    bub

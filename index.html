@@ -65,27 +65,35 @@
 
     /* الرسائل */
     .messages-area { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background: transparent; }
-    .msg-bubble { max-width: 80%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.5; word-break: break-word; position: relative; animation: fadeIn 0.3s ease; cursor: pointer; }
+    
+    .msg-wrapper { position: relative; display: flex; width: 100%; transition: transform 0.2s ease; }
+    .msg-wrapper.me { justify-content: flex-start; }
+    .msg-wrapper.other { justify-content: flex-end; }
+
+    .msg-bubble { max-width: 80%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.5; word-break: break-word; position: relative; animation: fadeIn 0.3s ease; user-select: none; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
     
-    .msg-bubble.me { align-self: flex-start; background: linear-gradient(135deg, #ff758c, #ff4d6d); color: white; border-bottom-right-radius: 4px; box-shadow: 0 4px 10px rgba(255, 77, 109, 0.25); }
-    .msg-bubble.other { align-self: flex-end; background: rgba(255, 255, 255, 0.95); color: #4a0017; border-bottom-left-radius: 4px; border: 1px solid rgba(255, 182, 193, 0.5); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    .msg-wrapper.me .msg-bubble { background: linear-gradient(135deg, #ff758c, #ff4d6d); color: white; border-bottom-right-radius: 4px; box-shadow: 0 4px 10px rgba(255, 77, 109, 0.25); }
+    .msg-wrapper.other .msg-bubble { background: rgba(255, 255, 255, 0.95); color: #4a0017; border-bottom-left-radius: 4px; border: 1px solid rgba(255, 182, 193, 0.5); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
     
     .quoted-reply { background: rgba(0, 0, 0, 0.1); border-right: 3px solid #ff4d6d; padding: 5px 8px; border-radius: 6px; font-size: 12px; margin-bottom: 6px; opacity: 0.9; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
-    .msg-bubble.other .quoted-reply { background: rgba(255, 117, 140, 0.15); border-right-color: #ff758c; }
+    .msg-wrapper.other .quoted-reply { background: rgba(255, 117, 140, 0.15); border-right-color: #ff758c; }
 
     .msg-meta { display: flex; justify-content: flex-end; align-items: center; gap: 4px; font-size: 10px; opacity: 0.85; margin-top: 4px; }
     .edited-tag { font-size: 9px; opacity: 0.8; margin-left: 3px; }
     .seen-mark.seen { color: #80d8ff; }
-    .msg-bubble.other .seen-mark.seen { color: #0084ff; }
+    .msg-wrapper.other .seen-mark.seen { color: #0084ff; }
 
     /* الصور داخل الشات */
     .chat-img { max-width: 100%; border-radius: 12px; margin-bottom: 5px; cursor: pointer; max-height: 220px; object-fit: cover; }
 
-    /* خيارات الرسالة */
-    .msg-actions { display: none; position: absolute; top: -28px; left: 10px; background: rgba(255,255,255,0.95); border: 1px solid #ff758c; border-radius: 12px; padding: 2px 8px; gap: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 5; }
-    .msg-bubble:hover .msg-actions, .msg-bubble:active .msg-actions { display: flex; }
-    .action-btn { font-size: 11px; color: #d63384; cursor: pointer; font-weight: bold; }
+    /* خيارات الرسالة (تظهر عند النقر) */
+    .msg-actions { display: none; position: absolute; top: -32px; right: 10px; background: rgba(255,255,255,0.95); border: 1px solid #ff758c; border-radius: 12px; padding: 3px 10px; gap: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10; }
+    .msg-actions.show { display: flex; }
+    .action-btn { font-size: 12px; color: #d63384; cursor: pointer; font-weight: bold; }
+
+    /* مؤشر السحب للرد */
+    .swipe-indicator { position: absolute; right: -25px; top: 50%; transform: translateY(-50%); font-size: 16px; color: #ff4d6d; opacity: 0; transition: opacity 0.2s; }
 
     /* معاينة الرد */
     .reply-preview { display: none; background: rgba(255, 255, 255, 0.9); padding: 8px 12px; border-top: 1px solid rgba(255, 182, 193, 0.4); border-right: 4px solid #ff4d6d; justify-content: space-between; align-items: center; font-size: 13px; color: #d63384; }
@@ -361,9 +369,9 @@
   function renderMsg(id, val, currentUser) {
     const area = document.getElementById('messagesArea');
     const isMe = val.sender === currentUser;
-    const div = document.createElement('div');
-    div.id = `m-${id}`;
-    div.className = `msg-bubble ${isMe ? 'me' : 'other'}`;
+    const wrapper = document.createElement('div');
+    wrapper.id = `m-${id}`;
+    wrapper.className = `msg-wrapper ${isMe ? 'me' : 'other'}`;
 
     let replyHtml = '';
     if (val.replyTo) {
@@ -380,15 +388,14 @@
       contentHtml = `<div class="msg-text">${escapeHtml(val.text)}</div>`;
     }
 
-    const actionsHtml = `
-      <div class="msg-actions">
-        <span class="action-btn" onclick="setReply('${escapeHtml(val.sender)}', '${escapeHtml(val.text || 'صورة')}">رد</span>
-        ${isMe && val.type === 'text' ? `<span class="action-btn" onclick="editMsg('${id}', '${escapeHtml(val.text)}')">تعديل</span>` : ''}
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble';
+    bubble.innerHTML = `
+      <div class="msg-actions" id="actions-${id}">
+        <span class="action-btn" onclick="event.stopPropagation(); setReply('${escapeHtml(val.sender)}', '${escapeHtml(val.text || 'صورة')}'); hideActions('${id}');">رد</span>
+        ${isMe && val.type === 'text' ? `<span class="action-btn" onclick="event.stopPropagation(); editMsg('${id}', '${escapeHtml(val.text)}'); hideActions('${id}');">تعديل</span>` : ''}
       </div>
-    `;
-
-    div.innerHTML = `
-      ${actionsHtml}
+      <span class="swipe-indicator">↩</span>
       ${replyHtml}
       ${contentHtml}
       <div class="msg-meta">
@@ -398,31 +405,86 @@
       </div>
     `;
 
-    area.appendChild(div);
+    // إظهار قائمة الخيارات عند الضغط على الرسالة
+    bubble.onclick = (e) => {
+      e.stopPropagation();
+      document.querySelectorAll('.msg-actions').forEach(el => el.classList.remove('show'));
+      const actions = document.getElementById(`actions-${id}`);
+      if (actions) actions.classList.toggle('show');
+    };
+
+    // ميزة السحب يمين للريبلاي (تجارب اللمس والماوس)
+    let startX = 0;
+    let currentX = 0;
+    let isSwiping = false;
+
+    bubble.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+      isSwiping = true;
+    }, {passive: true});
+
+    bubble.addEventListener('touchmove', (e) => {
+      if (!isSwiping) return;
+      currentX = e.touches[0].clientX - startX;
+      if (currentX > 0 && currentX < 90) {
+        wrapper.style.transform = `translateX(${currentX}px)`;
+        bubble.querySelector('.swipe-indicator').style.opacity = currentX / 60;
+      }
+    }, {passive: true});
+
+    bubble.addEventListener('touchend', () => {
+      if (!isSwiping) return;
+      isSwiping = false;
+      if (currentX > 50) {
+        setReply(val.sender, val.text || 'صورة');
+      }
+      wrapper.style.transform = 'translateX(0px)';
+      bubble.querySelector('.swipe-indicator').style.opacity = 0;
+      currentX = 0;
+    });
+
+    // دعم السحب بواسطة الماوس للكمبيوتر
+    bubble.addEventListener('mousedown', (e) => {
+      startX = e.clientX;
+      isSwiping = true;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isSwiping) return;
+      currentX = e.clientX - startX;
+      if (currentX > 0 && currentX < 90) {
+        wrapper.style.transform = `translateX(${currentX}px)`;
+        bubble.querySelector('.swipe-indicator').style.opacity = currentX / 60;
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (!isSwiping) return;
+      isSwiping = false;
+      if (currentX > 50) {
+        setReply(val.sender, val.text || 'صورة');
+      }
+      wrapper.style.transform = 'translateX(0px)';
+      bubble.querySelector('.swipe-indicator').style.opacity = 0;
+      currentX = 0;
+    });
+
+    wrapper.appendChild(bubble);
+    area.appendChild(wrapper);
     area.scrollTop = area.scrollHeight;
   }
+
+  window.hideActions = function(id) {
+    const actions = document.getElementById(`actions-${id}`);
+    if (actions) actions.classList.remove('show');
+  };
+
+  // إغلاق قوائم الخيارات عند الضغط في أي مكان بالشات
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.msg-actions').forEach(el => el.classList.remove('show'));
+  });
 
   window.setReply = function(sender, text) {
     window.activeReply = { sender, text };
     document.getElementById('replyText').textContent = `${sender}: ${text}`;
-    document.getElementById('replyPreview').style.display = 'flex';
-    document.getElementById('msgInput').focus();
-  };
-
-  window.editMsg = function(id, oldText) {
-    const newText = prompt("تعديل الرسالة:", oldText);
-    if (newText !== null && newText.trim() !== "" && newText !== oldText) {
-      update(ref(db, `private_chat/messages/${id}`), {
-        text: newText.trim(),
-        edited: true
-      });
-    }
-  };
-
-  function escapeHtml(t) {
-    if (!t) return '';
-    return t.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
-  }
-</script>
-</body>
-</html>
+    document.getElementById('replyPreview').sty

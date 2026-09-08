@@ -162,20 +162,25 @@
     document.getElementById("roleMe").classList.toggle("active", role === "🤴🏻");
   }
 
-  function login() {
+    function login() {
     const pass = document.getElementById("passCode").value.trim();
     const valid = ["15/8", "15-8", "15/08", "١٥/٨"];
     if (valid.includes(pass)) {
+      // طلب إذن الإشعارات فور الدخول
       if ("Notification" in window) {
-        Notification.requestPermission();
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") {
+            console.log("تم تفعيل الإشعارات بنجاح!");
+          }
+        });
       }
       document.getElementById("login-screen").style.display = "none";
       if (window.startChatApp) window.startChatApp(selectedRole);
     } else {
       alert("كلمة السر غير صحيحة 😅");
     }
-  }
-
+    }
+  
   function cancelReply() {
     activeReply = null;
     document.getElementById('replyPreview').style.display = 'none';

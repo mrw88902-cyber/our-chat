@@ -63,6 +63,8 @@
     .status-dot.online { background-color: #25d366; box-shadow: 0 0 6px #25d366; }
     .typing-text { color: #d63384; font-weight: bold; font-size: 11px; }
 
+    .notif-btn { background: #ff4d6d; color: white; border: none; padding: 6px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 8px rgba(255,77,109,0.3); }
+
     .messages-area { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; background: transparent; }
     
     .msg-wrapper { position: relative; display: flex; width: 100%; transition: transform 0.2s ease; }
@@ -131,6 +133,7 @@
           <span id="partnerStatus">غير متصل</span>
         </div>
       </div>
+      <button class="notif-btn" id="enableNotifBtn" onclick="enableNotifications()">تفعيل الإشعارات 🔔</button>
     </div>
   </div>
 
@@ -162,25 +165,36 @@
     document.getElementById("roleMe").classList.toggle("active", role === "🤴🏻");
   }
 
-    function login() {
+  function enableNotifications() {
+    if ("Notification" in window) {
+      Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+          alert("تم تفعيل الإشعارات بنجاح! ❤️");
+          document.getElementById('enableNotifBtn').style.display = 'none';
+          new Notification("تنبيه الإشعارات 🔔", {
+            body: "جاهز لتلقي التنبيهات فور دخول الطرف الآخر أو إرسال كود جديد!",
+            icon: "https://cdn-icons-png.flaticon.com/512/1077/1077035.png"
+          });
+        } else {
+          alert("لم يتم إعطاء الإذن، يرجى تفعيله من إعدادات المتصفح.");
+        }
+      });
+    } else {
+      alert("متصفحك لا يدعم الإشعارات المباشرة.");
+    }
+  }
+
+  function login() {
     const pass = document.getElementById("passCode").value.trim();
     const valid = ["15/8", "15-8", "15/08", "١٥/٨"];
     if (valid.includes(pass)) {
-      // طلب إذن الإشعارات فور الدخول
-      if ("Notification" in window) {
-        Notification.requestPermission().then(permission => {
-          if (permission === "granted") {
-            console.log("تم تفعيل الإشعارات بنجاح!");
-          }
-        });
-      }
       document.getElementById("login-screen").style.display = "none";
       if (window.startChatApp) window.startChatApp(selectedRole);
     } else {
       alert("كلمة السر غير صحيحة 😅");
     }
-    }
-  
+  }
+
   function cancelReply() {
     activeReply = null;
     document.getElementById('replyPreview').style.display = 'none';
@@ -223,6 +237,10 @@
   window.startChatApp = function(userRole) {
     const partnerRole = userRole === '👸🏻' ? '🤴🏻' : '👸🏻';
     document.getElementById('partnerTitle').textContent = `الشات مع ${partnerRole}`;
+
+    if ("Notification" in window && Notification.permission === "granted") {
+      document.getElementById('enableNotifBtn').style.display = 'none';
+    }
 
     const messagesRef = ref(db, 'private_chat/messages');
     const myPresenceRef = ref(db, `private_chat/presence/${userRole}`);
@@ -436,7 +454,7 @@
     bubble.innerHTML = `
       <div class="reaction-bar" id="react-${id}">
         <span class="reaction-emoji" onclick="event.stopPropagation(); toggleReaction('${id}', '❤️')">❤️</span>
-        <span class="reaction-emoji" onclick="event.stopPropagation(); toggleReaction('${id}', '😂')">😂</span>
+          <span class="reaction-emoji" onclick="event.stopPropagation(); toggleReaction('${id}', '😂')">😂</span>
         <span class="reaction-emoji" onclick="event.stopPropagation(); toggleReaction('${id}', '👍')">👍</span>
         <span class="reaction-emoji" onclick="event.stopPropagation(); toggleReaction('${id}', '👀')">👀</span>
       </div>
